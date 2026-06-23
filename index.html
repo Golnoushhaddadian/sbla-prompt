@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SBLA Prompt Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Surfaces & text */
+    --bg-from:        #F5F3FF;
+    --bg-to:          #FDF2F8;
+    --surface:        #FFFFFF;
+    --text:           #0F172A;
+    --text-soft:      #334155;
+    --muted:          #64748B;
+    --muted-soft:     #94A3B8;
+    --border:         #E9E3F2;
+    --border-strong:  #D8CFE8;
+
+    /* Vibrant brand */
+    --primary:        #8B5CF6;       /* violet */
+    --primary-deep:   #7C3AED;
+    --accent:         #EC4899;       /* pink */
+    --accent-deep:    #DB2777;
+    --gradient:       linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+    --gradient-soft:  linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(236,72,153,0.08) 100%);
+
+    /* Success (filled / complete) */
+    --success:        #10B981;
+    --success-deep:   #059669;
+    --success-light:  #ECFDF5;
+
+    /* Highlight (unfilled placeholder) */
+    --warning-light:  #FEF3C7;
+    --warning-deep:   #B45309;
+
+    /* Section accent palette */
+    --c-blue:         #3B82F6;
+    --c-blue-grad:    linear-gradient(135deg, #60A5FA, #2563EB);
+    --c-blue-tint:    #EFF6FF;
+
+    --c-purple:       #8B5CF6;
+    --c-purple-grad:  linear-gradient(135deg, #A78BFA, #7C3AED);
+    --c-purple-tint:  #F5F3FF;
+
+    --c-pink:         #EC4899;
+    --c-pink-grad:    linear-gradient(135deg, #F472B6, #DB2777);
+    --c-pink-tint:    #FDF2F8;
+
+    --c-amber:        #F59E0B;
+    --c-amber-grad:   linear-gradient(135deg, #FBBF24, #D97706);
+    --c-amber-tint:   #FEF3C7;
+
+    --danger:         #EF4444;
+    --radius:         12px;
+    --radius-sm:      8px;
+    --radius-pill:    999px;
+    --shadow-sm:      0 1px 2px 0 rgba(15, 23, 42, 0.04);
+    --shadow:         0 4px 12px -2px rgba(139, 92, 246, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
+    --shadow-lg:      0 12px 32px -8px rgba(139, 92, 246, 0.18), 0 4px 12px -2px rgba(236, 72, 153, 0.08);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(180deg, var(--bg-from) 0%, var(--bg-to) 100%);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+
+  /* ────── Top bar ────── */
+  .top-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: grid;
+    grid-template-columns: 1fr minmax(280px, 520px) 1fr;
+    gap: 24px;
+    align-items: center;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 800;
+    font-size: 14px;
+    box-shadow: 0 4px 12px -2px rgba(139, 92, 246, 0.4);
+  }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.2; }
+  .brand h1 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .brand .ctx {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .progress-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--border);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--gradient);
+    border-radius: var(--radius-pill);
+    width: 0%;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+  }
+  .progress-fill.complete {
+    background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+  }
+  .progress-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .progress-pct {
+    font-weight: 700;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    min-width: 36px;
+    text-align: right;
+  }
+  .progress-pct.complete {
+    background: linear-gradient(135deg, #10B981, #34D399);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  .progress-status { color: var(--muted); font-weight: 500; }
+  .progress-status.complete { color: var(--success); font-weight: 600; }
+
+  .top-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* ────── Buttons ────── */
+  .btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 16px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.18s ease, color 0.15s ease;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.2;
+    letter-spacing: -0.005em;
+  }
+  .btn-primary {
+    background: var(--gradient);
+    color: white;
+    box-shadow: 0 4px 12px -2px rgba(139, 92, 246, 0.4);
+  }
+  .btn-primary:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px -4px rgba(139, 92, 246, 0.5);
+  }
+  .btn-primary:not(:disabled):active { transform: translateY(0); }
+  .btn-primary:disabled {
+    background: var(--border);
+    color: var(--muted-soft);
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+  }
+  .btn-ghost:hover { background: rgba(139, 92, 246, 0.08); color: var(--primary-deep); }
+  .btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  /* ────── Workspace ────── */
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 24px;
+    padding: 28px 32px 56px;
+    max-width: 1440px;
+    margin: 0 auto;
+    align-items: start;
+  }
+  @media (max-width: 960px) {
+    .workspace { grid-template-columns: 1fr; padding: 20px; gap: 16px; }
+    .top-bar { grid-template-columns: 1fr; gap: 12px; padding: 14px 18px; }
+    .top-actions { justify-content: flex-start; }
+  }
+
+  /* ────── Cards ────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s ease, transform 0.18s ease, border-color 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .card:last-child { margin-bottom: 0; }
+  .card:hover { box-shadow: var(--shadow); }
+
+  /* Section accent stripes (left edge) */
+  .card[data-section]::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--c-blue-grad);
+    opacity: 0.85;
+  }
+  .card[data-section="scenario"]::before { background: var(--c-purple-grad); }
+  .card[data-section="learning"]::before { background: var(--c-pink-grad); }
+  .card[data-section="resources"]::before { background: var(--c-amber-grad); }
+
+  .card.complete {
+    border-color: rgba(16, 185, 129, 0.25);
+    background: linear-gradient(180deg, var(--success-light) 0%, var(--surface) 60px);
+  }
+  .card.complete::before {
+    background: linear-gradient(135deg, #10B981, #34D399) !important;
+    opacity: 1;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  /* Section icon badges */
+  .section-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: white;
+    box-shadow: 0 4px 10px -2px rgba(0,0,0,0.12);
+  }
+  .section-icon svg { width: 16px; height: 16px; }
+  .card[data-section="course"] .section-icon    { background: var(--c-blue-grad); }
+  .card[data-section="scenario"] .section-icon  { background: var(--c-purple-grad); }
+  .card[data-section="learning"] .section-icon  { background: var(--c-pink-grad); }
+  .card[data-section="resources"] .section-icon { background: var(--c-amber-grad); }
+
+  .card-completion {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    background: var(--border);
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+  }
+  .card.complete .card-completion {
+    background: linear-gradient(135deg, #10B981, #34D399);
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .card.complete .card-completion::before {
+    content: '✓';
+    font-weight: 700;
+  }
+
+  /* ────── Fields ────── */
+  .fields { display: flex; flex-direction: column; gap: 14px; }
+  .field { position: relative; }
+
+  .field-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-soft);
+    margin-bottom: 6px;
+    line-height: 1.4;
+    letter-spacing: -0.005em;
+  }
+  .required {
+    color: var(--danger);
+    font-size: 13px;
+    line-height: 1;
+  }
+  .optional-tag {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+    margin-left: 2px;
+    background: var(--border);
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+  }
+  .info-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted-soft);
+    cursor: pointer;
+    padding: 2px;
+    font-size: 14px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 50%;
+    transition: color 0.15s ease, background 0.15s ease;
+    margin-left: auto;
+  }
+  .info-btn:hover { color: var(--primary); background: var(--c-purple-tint); }
+  .info-btn[aria-expanded="true"] { color: var(--primary); background: var(--c-purple-tint); }
+
+  .field-info {
+    margin-top: 8px;
+    padding: 12px 14px;
+    background: var(--c-purple-tint);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    color: var(--text-soft);
+    line-height: 1.55;
+  }
+  .field-info ul { margin: 6px 0 0 0; padding-left: 18px; }
+  .field-info li { margin: 3px 0; }
+  .field-info strong { color: var(--primary-deep); font-weight: 700; }
+
+  .input-wrap { position: relative; }
+  .field input[type="text"],
+  .field textarea {
+    width: 100%;
+    padding: 10px 38px 10px 14px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .field input:hover, .field textarea:hover { border-color: var(--border-strong); }
+  .field input:focus, .field textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12);
+  }
+  .field input.filled, .field textarea.filled {
+    border-color: var(--success);
+    background: linear-gradient(180deg, var(--success-light) 0%, var(--surface) 50%);
+  }
+  .field input::placeholder, .field textarea::placeholder { color: var(--muted-soft); }
+  .field textarea {
+    min-height: 68px;
+    resize: vertical;
+    line-height: 1.5;
+    font-family: inherit;
+  }
+
+  .input-check {
+    position: absolute;
+    right: 11px;
+    top: 11px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10B981, #34D399);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.6) rotate(-90deg);
+    transition: opacity 0.22s ease, transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  }
+  .input-check::after {
+    content: '';
+    width: 9px;
+    height: 5px;
+    border-left: 2px solid white;
+    border-bottom: 2px solid white;
+    transform: rotate(-45deg) translate(1px, -1px);
+  }
+  .input-wrap:has(input.filled) .input-check,
+  .input-wrap:has(textarea.filled) .input-check {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+
+  /* ────── Prompt card ────── */
+  .prompt-card { padding: 0; overflow: hidden; }
+  .prompt-card .card-header {
+    padding: 20px;
+    margin-bottom: 0;
+    background: var(--gradient-soft);
+    border-bottom: 1px solid var(--border);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .prompt-card .card-title { font-size: 15px; }
+  .prompt-card-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--gradient);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 4px 12px -2px rgba(139, 92, 246, 0.4);
+  }
+  .prompt-card-icon svg { width: 16px; height: 16px; }
+
+  .copy-feedback {
+    font-size: 12px;
+    color: var(--success);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    font-weight: 600;
+  }
+  .copy-feedback.visible { opacity: 1; }
+
+  .prompt-body {
+    padding: 20px;
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--text-soft);
+    max-height: 680px;
+    overflow-y: auto;
+  }
+  .prompt-body p { margin: 0 0 12px; }
+  .prompt-body .prompt-h3 {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary-deep);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 24px 0 10px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--border);
+    position: relative;
+  }
+  .prompt-body .prompt-h3::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 0;
+    width: 32px;
+    height: 2px;
+    background: var(--gradient);
+    border-radius: 1px;
+  }
+  .prompt-body .prompt-h3:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+  .prompt-body .prompt-h3:first-child::before { display: none; }
+  .prompt-body ol, .prompt-body ul { margin: 0 0 12px; padding-left: 24px; }
+  .prompt-body li { margin-bottom: 5px; }
+
+  .var.empty {
+    background: var(--warning-light);
+    color: var(--warning-deep);
+    padding: 2px 7px;
+    border-radius: var(--radius-pill);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .var.filled {
+    color: var(--success-deep);
+    font-weight: 700;
+    background: var(--success-light);
+    padding: 1px 6px;
+    border-radius: 5px;
+  }
+
+  body.sba-empty .when-sba-filled { display: none; }
+  body:not(.sba-empty) .when-sba-empty { display: none; }
+  body.lens-empty .when-lens-filled { display: none; }
+
+  .prompt-body::-webkit-scrollbar { width: 8px; }
+  .prompt-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--primary), var(--accent));
+    border-radius: 4px;
+  }
+  .prompt-body::-webkit-scrollbar-track { background: transparent; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body class="sba-empty lens-empty">
+
+<header class="top-bar">
+  <div class="brand">
+    <div class="brand-logo">S</div>
+    <div class="brand-text">
+      <h1>SBLA Prompt Builder</h1>
+      <span class="ctx">for lo-blocks</span>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-meta">
+      <span class="progress-pct" id="progress-pct">0%</span>
+      <span class="progress-status" id="progress-status">9 to go</span>
+    </div>
+  </div>
+
+  <div class="top-actions">
+    <button class="btn btn-ghost" id="reset-btn">Reset</button>
+  </div>
+</header>
+
+<main class="workspace">
+
+  <section class="form-side">
+
+    <!-- Course Information -->
+    <article class="card" data-section="course">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span class="section-icon">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4.5L10 2L18 4.5L10 7L2 4.5Z"/><path d="M2 4.5V13L10 15.5L18 13V4.5"/><path d="M6 6V14"/></svg>
+          </span>
+          Course Information
+        </h2>
+        <span class="card-completion" data-section-count="course">0 of 2</span>
+      </div>
+      <div class="fields">
+        <div class="field">
+          <label class="field-label">Course <span class="required">*</span></label>
+          <div class="input-wrap">
+            <input type="text" data-var="course" autocomplete="off" placeholder="e.g., PHIL 301 Bioethics">
+            <span class="input-check"></span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Unit <span class="required">*</span></label>
+          <div class="input-wrap">
+            <input type="text" data-var="unit" autocomplete="off" placeholder="e.g., Unit 4: Genetic Engineering Ethics">
+            <span class="input-check"></span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Scenario Design -->
+    <article class="card" data-section="scenario">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span class="section-icon">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="7" r="2.5"/><circle cx="14" cy="7" r="2.5"/><path d="M3 17C3 14 5 12 7 12C7.5 13 9 13.5 10 13.5C11 13.5 12.5 13 13 12C15 12 17 14 17 17"/></svg>
+          </span>
+          Scenario Design
+        </h2>
+        <span class="card-completion" data-section-count="scenario">0 of 3</span>
+      </div>
+      <div class="fields">
+        <div class="field">
+          <label class="field-label">Setting <span class="required">*</span></label>
+          <div class="input-wrap">
+            <textarea data-var="setting" rows="2" placeholder="e.g., a regional fertility clinic where a couple is considering preimplantation genetic diagnosis"></textarea>
+            <span class="input-check"></span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Student Role <span class="required">*</span></label>
+          <div class="input-wrap">
+            <input type="text" data-var="role" autocomplete="off" placeholder="e.g., a genetic counselor advising the couple">
+            <span class="input-check"></span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Stakeholders <span class="required">*</span></label>
+          <div class="input-wrap">
+            <textarea data-var="stakeholders" rows="2" placeholder="e.g., the prospective parents, the attending physician, a hospital ethics committee chair"></textarea>
+            <span class="input-check"></span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Learning Design -->
+    <article class="card" data-section="learning">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span class="section-icon">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2C7 2 5 4.5 5 7C5 9 6 10 7 11V13H13V11C14 10 15 9 15 7C15 4.5 13 2 10 2Z"/><path d="M7 15H13"/><path d="M8.5 17H11.5"/></svg>
+          </span>
+          Learning Design
+        </h2>
+        <span class="card-completion" data-section-count="learning">0 of 3</span>
+      </div>
+      <div class="fields">
+        <div class="field">
+          <label class="field-label">Central Problem <span class="required">*</span></label>
+          <div class="input-wrap">
+            <textarea data-var="problem" rows="3" placeholder="e.g., a request to select an embryo for a non-medical trait, presenting an ethical dilemma with multiple defensible viewpoints"></textarea>
+            <span class="input-check"></span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Required Skills <span class="required">*</span></label>
+          <div class="input-wrap">
+            <textarea data-var="skills" rows="2" placeholder="e.g., ethical reasoning frameworks, clinical communication skills, knowledge of relevant policy"></textarea>
+            <span class="input-check"></span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">
+            Conceptual Lens
+            <span class="optional-tag">Optional</span>
+            <button class="info-btn" type="button" data-info-toggle="lens" aria-expanded="false" aria-label="Examples">ⓘ</button>
+          </label>
+          <div class="input-wrap">
+            <input type="text" data-var="lens" autocomplete="off" placeholder="e.g., utilitarian ethical principles">
+            <span class="input-check"></span>
+          </div>
+          <div class="field-info" id="info-lens" hidden>
+            The theoretical lens varies by discipline:
+            <ul>
+              <li><strong>Bioethics</strong>: utilitarian ethical principles</li>
+              <li><strong>Education</strong>: constructivist learning theory</li>
+              <li><strong>Economics</strong>: supply-and-demand reasoning</li>
+              <li><strong>Psychology</strong>: attachment theory</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Resources -->
+    <article class="card" data-section="resources">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span class="section-icon">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5C2 4 3 3 4 3H7.5L9 5H16C17 5 18 6 18 7V14C18 15 17 16 16 16H4C3 16 2 15 2 14V5Z"/></svg>
+          </span>
+          Resources
+        </h2>
+        <span class="card-completion" data-section-count="resources">0 of 1</span>
+      </div>
+      <div class="fields">
+        <div class="field">
+          <label class="field-label">
+            Resource Folder <span class="required">*</span>
+            <button class="info-btn" type="button" data-info-toggle="folder" aria-expanded="false" aria-label="About this folder">ⓘ</button>
+          </label>
+          <div class="input-wrap">
+            <input type="text" data-var="folder" autocomplete="off" placeholder="e.g., Bioethics 301 Course Resources">
+            <span class="input-check"></span>
+          </div>
+          <div class="field-info" id="info-folder" hidden>
+            The top-level folder that holds your SBAs subfolders, the Framework folder, and the lo-blocks documentation.
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">
+            SBA Subfolder
+            <span class="optional-tag">Optional</span>
+            <button class="info-btn" type="button" data-info-toggle="sbaFolder" aria-expanded="false" aria-label="About fallback">ⓘ</button>
+          </label>
+          <div class="input-wrap">
+            <input type="text" data-var="sbaFolder" autocomplete="off" placeholder="e.g., Genetic Enhancement Decisions SBA">
+            <span class="input-check"></span>
+          </div>
+          <div class="field-info" id="info-sbaFolder" hidden>
+            The subfolder for this specific SBA. If left blank, the prompt uses your Resource Folder instead.
+          </div>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- Preview -->
+  <section class="preview-side">
+    <article class="card prompt-card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span class="prompt-card-icon">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4H17"/><path d="M3 8H17"/><path d="M3 12H13"/><path d="M3 16H10"/></svg>
+          </span>
+          Generated Prompt
+        </h2>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="copy-feedback" id="copy-feedback">Copied</span>
+          <button class="btn btn-primary" id="copy-btn" disabled>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="9" height="9" rx="1.5"/><path d="M11.5 3.5V2.5C11.5 2 11 1.5 10.5 1.5H3.5C3 1.5 2.5 2 2.5 2.5V10.5C2.5 11 3 11.5 3.5 11.5H4.5"/></svg>
+            Copy prompt
+          </button>
+        </div>
+      </div>
+      <div class="prompt-body" id="prompt-body">
+
+        <p class="when-sba-filled">Please look through the <span class="var" data-var="folder"></span> and find the SBAs folder there. Your overall task is to create a launchable SBA in the lo-blocks system for the course <span class="var" data-var="course"></span>, based on the <span class="var" data-var="sbaFolder"></span> subfolder. Specifically, you will design an SBA for the <span class="var" data-var="unit"></span> unit of the course represented in the syllabus inside that subfolder.</p>
+
+        <p class="when-sba-empty">Please look through the <span class="var" data-var="folder"></span> and find the SBAs folder there. Your overall task is to create a launchable SBA in the lo-blocks system for the course <span class="var" data-var="course"></span>, based on the <span class="var" data-var="folder"></span> folder. Specifically, you will design an SBA for the <span class="var" data-var="unit"></span> unit of the course represented in the syllabus inside that folder.</p>
+
+        <p>Base your SBA on three sources:</p>
+        <ol>
+          <li class="when-sba-filled">The readings and syllabus in the <span class="var" data-var="sbaFolder"></span> folder, which tell you about the course.</li>
+          <li class="when-sba-empty">The readings and syllabus in the <span class="var" data-var="folder"></span> folder, which tell you about the course.</li>
+          <li>The documents in the Framework folder, which explain what an SBA is and how to build a strong one.</li>
+          <li>The documentation and example SBAs in the lo-blocks folder, which show you how the authoring system works.</li>
+        </ol>
+
+        <div class="prompt-h3">What the scenario should do</div>
+        <p>Following the Framework documents, the scenario must be realistic. It should:</p>
+        <ul>
+          <li>Take place in this setting: <span class="var" data-var="setting"></span>.</li>
+          <li>Put the student in this role: <span class="var" data-var="role"></span>.</li>
+          <li>Include other stakeholders such as: <span class="var" data-var="stakeholders"></span>.</li>
+          <li>Center on this problem or situation: <span class="var" data-var="problem"></span>.</li>
+          <li>Require the student to apply: <span class="var" data-var="skills"></span>.</li>
+        </ul>
+
+        <div class="prompt-h3">What to include in your response</div>
+        <p>For this first draft, provide these sections:</p>
+        <ul>
+          <li>Scenario title</li>
+          <li>One-paragraph scenario summary</li>
+          <li>The main questions or dilemmas the scenario raises</li>
+          <li>Key stakeholders</li>
+          <li>Relevant learning outcomes</li>
+          <li>A short note on why this scenario is a strong basis for the full SBA</li>
+        </ul>
+
+        <div class="prompt-h3">Things to think through as you design</div>
+        <p>Address each of these in your draft:</p>
+        <ul>
+          <li class="when-lens-filled">The <span class="var" data-var="lens"></span> the scenario activates.</li>
+          <li>Sources of conflict or disagreement built into the scenario.</li>
+          <li>Positions different stakeholders may take.</li>
+          <li>Whether the complexity level fits the course.</li>
+          <li>Discussion questions for students.</li>
+          <li>Possible decision paths, without naming any single right answer.</li>
+          <li>How the scenario meets the course learning objectives.</li>
+        </ul>
+
+        <div class="prompt-h3">What the final SBA will need</div>
+        <p>These don't apply to this first draft, but keep them in mind so the scenario can grow into them. The final SBA must:</p>
+        <ul>
+          <li>Align with the course learning outcomes in the syllabus.</li>
+          <li>Match the complexity level of the class.</li>
+          <li>Include realistic background and enough context.</li>
+          <li>Spark meaningful discussion among the various roles.</li>
+          <li>Encourage evidence-based reasoning.</li>
+          <li>Give students clear tasks and deliverables.</li>
+          <li>Include assessment criteria linked to learning objectives.</li>
+          <li>Be immersive, realistic, and right for higher-education students.</li>
+          <li>Be a complete, launchable SBA in lo-blocks, not just an outline.</li>
+        </ul>
+
+        <div class="prompt-h3">How to send it back</div>
+        <p>Don't build the full SBA yet. Your response should contain only the core scenario the full SBA will be based on. Send it back as a .docx file.</p>
+
+      </div>
+    </article>
+  </section>
+</main>
+
+<script>
+(function() {
+  'use strict';
+
+  const PLACEHOLDERS = {
+    folder:       "[LOCAL RESOURCES FOLDER NAME]",
+    sbaFolder:    "[SPECIFIC SBA SUBFOLDER NAME]",
+    course:       "[COURSE NAME]",
+    unit:         "[COURSE UNIT]",
+    setting:      "[SCENARIO SETTING]",
+    role:         "[STUDENT'S ROLE]",
+    stakeholders: "[OTHER CHARACTERS OR STAKEHOLDERS]",
+    problem:      "[CENTRAL PROBLEM OR SITUATION]",
+    skills:       "[KNOWLEDGE OR SKILLS THE STUDENT MUST USE]",
+    lens:         "[THEORETICAL OR CONCEPTUAL LENS]"
+  };
+
+  const SECTIONS = {
+    course:    ['course', 'unit'],
+    scenario:  ['setting', 'role', 'stakeholders'],
+    learning:  ['problem', 'skills'],
+    resources: ['folder']
+  };
+
+  const REQUIRED = ['folder', 'course', 'unit', 'setting', 'role', 'stakeholders', 'problem', 'skills'];
+
+  const inputs = document.querySelectorAll('[data-var]:not(span)');
+  const copyBtn = document.getElementById('copy-btn');
+  const resetBtn = document.getElementById('reset-btn');
+  const progressFill = document.getElementById('progress-fill');
+  const progressPct = document.getElementById('progress-pct');
+  const progressStatus = document.getElementById('progress-status');
+  const copyFeedback = document.getElementById('copy-feedback');
+
+  function updateVar(varName) {
+    const input = document.querySelector(`input[data-var="${varName}"], textarea[data-var="${varName}"]`);
+    if (!input) return;
+    const value = input.value.trim();
+
+    document.querySelectorAll(`span.var[data-var="${varName}"]`).forEach(span => {
+      if (value) {
+        span.textContent = value;
+        span.classList.remove('empty');
+        span.classList.add('filled');
+      } else {
+        span.textContent = PLACEHOLDERS[varName];
+        span.classList.remove('filled');
+        span.classList.add('empty');
+      }
+    });
+    input.classList.toggle('filled', !!value);
+  }
+
+  function updateSbaState() {
+    const sbaInput = document.querySelector('input[data-var="sbaFolder"]');
+    const hasSba = sbaInput && sbaInput.value.trim().length > 0;
+    document.body.classList.toggle('sba-empty', !hasSba);
+  }
+
+  function updateLensState() {
+    const lensInput = document.querySelector('input[data-var="lens"]');
+    const hasLens = lensInput && lensInput.value.trim().length > 0;
+    document.body.classList.toggle('lens-empty', !hasLens);
+  }
+
+  function updateSectionCompletion() {
+    Object.entries(SECTIONS).forEach(([section, vars]) => {
+      const filled = vars.filter(v => {
+        const el = document.querySelector(`[data-var="${v}"]:not(span)`);
+        return el && el.value.trim();
+      }).length;
+      const total = vars.length;
+      const complete = filled === total;
+
+      const countEl = document.querySelector(`[data-section-count="${section}"]`);
+      if (countEl) {
+        countEl.textContent = complete ? 'Complete' : `${filled} of ${total}`;
+        countEl.classList.toggle('complete', complete);
+      }
+      const card = document.querySelector(`[data-section="${section}"]`);
+      if (card) card.classList.toggle('complete', complete);
+    });
+  }
+
+  function updateProgress() {
+    const filled = REQUIRED.filter(name => {
+      const el = document.querySelector(`[data-var="${name}"]:not(span)`);
+      return el && el.value.trim();
+    }).length;
+    const total = REQUIRED.length;
+    const pct = Math.round((filled / total) * 100);
+    const complete = filled === total;
+
+    progressFill.style.width = pct + '%';
+    progressFill.classList.toggle('complete', complete);
+    progressPct.textContent = pct + '%';
+    progressPct.classList.toggle('complete', complete);
+
+    if (complete) {
+      progressStatus.textContent = 'Complete';
+      progressStatus.classList.add('complete');
+    } else {
+      const remaining = total - filled;
+      progressStatus.textContent = remaining === 1 ? '1 to go' : `${remaining} to go`;
+      progressStatus.classList.remove('complete');
+    }
+    copyBtn.disabled = !complete;
+  }
+
+  function buildPlainText() {
+    const preview = document.getElementById('prompt-body');
+    const lines = [];
+    for (const node of preview.children) {
+      if (getComputedStyle(node).display === 'none') continue;
+      const tag = node.tagName.toLowerCase();
+
+      if (tag === 'div' && node.classList.contains('prompt-h3')) {
+        lines.push(''); lines.push(node.textContent.trim()); lines.push('');
+      } else if (tag === 'p') {
+        lines.push(node.textContent.trim()); lines.push('');
+      } else if (tag === 'ol' || tag === 'ul') {
+        const items = Array.from(node.children).filter(li =>
+          li.tagName.toLowerCase() === 'li' && getComputedStyle(li).display !== 'none'
+        );
+        let i = 0;
+        items.forEach(li => {
+          const prefix = tag === 'ol' ? `${++i}. ` : '- ';
+          lines.push(prefix + li.textContent.trim().replace(/\s+/g, ' '));
+        });
+        lines.push('');
+      }
+    }
+    return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  inputs.forEach(input => {
+    input.addEventListener('input', () => {
+      updateVar(input.dataset.var);
+      if (input.dataset.var === 'sbaFolder') updateSbaState();
+      if (input.dataset.var === 'lens') updateLensState();
+      updateSectionCompletion();
+      updateProgress();
+    });
+  });
+
+  document.querySelectorAll('[data-info-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById('info-' + btn.dataset.infoToggle);
+      if (!target) return;
+      const isHidden = target.hidden;
+      target.hidden = !isHidden;
+      btn.setAttribute('aria-expanded', String(isHidden));
+    });
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    const text = buildPlainText();
+    let copied = false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        copied = document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+    } catch (e) { copied = false; }
+    copyFeedback.textContent = copied ? 'Copied' : 'Press Cmd/Ctrl+C';
+    copyFeedback.classList.add('visible');
+    setTimeout(() => copyFeedback.classList.remove('visible'), copied ? 1800 : 2400);
+  });
+
+  resetBtn.addEventListener('click', () => {
+    const anyFilled = Array.from(inputs).some(i => i.value.trim());
+    if (anyFilled && !confirm('Reset all fields?')) return;
+    inputs.forEach(i => { i.value = ''; updateVar(i.dataset.var); });
+    updateSbaState();
+    updateLensState();
+    updateSectionCompletion();
+    updateProgress();
+    inputs[0].focus();
+  });
+
+  Object.keys(PLACEHOLDERS).forEach(updateVar);
+  updateSbaState();
+  updateLensState();
+  updateSectionCompletion();
+  updateProgress();
+})();
+</script>
+
+</body>
+</html>
